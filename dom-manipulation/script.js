@@ -1,5 +1,5 @@
-// Initial quotes array
-let quotes = [
+// Load quotes from localStorage or use default
+let quotes = JSON.parse(localStorage.getItem("quotes")) || [
   { text: "Success is not final, failure is not fatal: It is the courage to continue that counts.", category: "Motivation" },
   { text: "Be yourself; everyone else is already taken.", category: "Humor" },
   { text: "The best way to get started is to quit talking and begin doing.", category: "Motivation" },
@@ -17,9 +17,14 @@ function showRandomQuote() {
     quoteDisplay.innerHTML = "<em>No quotes available.</em>";
     return;
   }
+
   const randomIndex = Math.floor(Math.random() * quotes.length);
   const quote = quotes[randomIndex];
+
   quoteDisplay.innerHTML = `<p>"${quote.text}"</p><small>— ${quote.category}</small>`;
+
+  // Save last viewed quote to sessionStorage
+  sessionStorage.setItem("lastQuote", JSON.stringify(quote));
 }
 
 // Add a new quote dynamically
@@ -34,6 +39,9 @@ function addQuote() {
 
   // Add to array
   quotes.push({ text: quoteText, category: quoteCategory });
+
+  // Save updated quotes to localStorage
+  localStorage.setItem("quotes", JSON.stringify(quotes));
 
   // Clear form
   document.getElementById("newQuoteText").value = "";
@@ -56,11 +64,21 @@ function createAddQuoteForm() {
 
   document.body.appendChild(formContainer);
 
-  // Attach event listener to the new button
   document.getElementById("addQuoteBtn").addEventListener("click", addQuote);
+}
+
+// Restore last viewed quote from sessionStorage
+function restoreLastViewedQuote() {
+  const lastQuote = sessionStorage.getItem("lastQuote");
+  if (lastQuote) {
+    const quote = JSON.parse(lastQuote);
+    quoteDisplay.innerHTML = `<p>"${quote.text}"</p><small>— ${quote.category}</small>`;
+  } else {
+    showRandomQuote();
+  }
 }
 
 // Initialize
 newQuoteBtn.addEventListener("click", showRandomQuote);
 createAddQuoteForm();
-showRandomQuote();
+restoreLastViewedQuote();
