@@ -149,3 +149,20 @@ button:hover {
   font-size: 0.95rem;
 }
 
+#syncStatus {
+  margin-top: 12px;
+  padding: 8px 12px;
+  border-radius: 6px;
+  font-size: 0.9rem;
+  display: none; /* hidden by default */
+}
+#syncStatus.info {
+  background-color: #e7f3ff;
+  color: #084298;
+  border: 1px solid #b6d4fe;
+}
+#syncStatus.warning {
+  background-color: #fff3cd;
+  color: #664d03;
+  border: 1px solid #ffecb5;
+}

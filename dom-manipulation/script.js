@@ -11,6 +11,21 @@ let quotes = JSON.parse(localStorage.getItem("quotes")) || [
 const quoteDisplay = document.getElementById("quoteDisplay");
 const newQuoteBtn = document.getElementById("newQuote");
 
+// Show sync status notification
+function showSyncStatus(message, type = "info") {
+  const statusDiv = document.getElementById("syncStatus");
+  if (!statusDiv) return; // If element doesn't exist, skip
+  
+  statusDiv.textContent = message;
+  statusDiv.className = type ? type : "info";
+  statusDiv.style.display = "block";
+
+  // Hide after 5s automatically
+  setTimeout(() => {
+    statusDiv.style.display = "none";
+  }, 5000);
+}
+
 // Show a random quote (respects active filter)
 function showRandomQuote() {
   const categoryFilter = document.getElementById("categoryFilter");
@@ -69,6 +84,7 @@ function addQuote() {
 
   // 🔹 Simulate posting to server as well
   postQuoteToServer(newQuote);
+  showSyncStatus("New quote added and synced to server.", "info");
 }
 
 // Export quotes to JSON file
@@ -96,14 +112,20 @@ function importFromJsonFile(event) {
         throw new Error("Invalid format: expected an array.");
       }
 
-      const validQuotes = importedQuotes.filter(q => q.text && q.category);
+      const validQuotes = importedQuotes.filter(q => q.text && q.category).map(q => ({
+        ...q,
+        id: q.id || Date.now() + Math.random(),
+        source: q.source || "imported",
+        lastModified: q.lastModified || new Date().toISOString()
+      }));
+      
       quotes.push(...validQuotes);
       saveQuotes();
-      alert("Quotes imported successfully!");
+      showSyncStatus(`${validQuotes.length} quotes imported successfully!`, "info");
       showRandomQuote();
       populateCategories();
     } catch (err) {
-      alert("Failed to import quotes: " + err.message);
+      showSyncStatus("Failed to import quotes: " + err.message, "warning");
     }
   };
   fileReader.readAsText(event.target.files[0]);
@@ -134,8 +156,8 @@ function createAddQuoteForm() {
   }
 
   document.getElementById("addQuoteBtn").addEventListener("click", addQuote);
-  exportBtn.addEventListener("click", exportQuotesToJson);
-  importFile.addEventListener("change", importFromJsonFile);
+  if (exportBtn) exportBtn.addEventListener("click", exportQuotesToJson);
+  if (importFile) importFile.addEventListener("change", importFromJsonFile);
 }
 
 // Restore last viewed quote from sessionStorage
@@ -195,15 +217,67 @@ function filterQuotes() {
 }
 
 /* ------------------------------
+   CONFLICT RESOLUTION FUNCTIONS
+--------------------------------*/
+
+// Manual conflict resolution - user chooses which version to keep
+function resolveConflict(localQuote, serverQuote) {
+  const choice = confirm(
+    `Conflict detected for quote ID ${localQuote.id}!\n\n` +
+    `Local version: "${localQuote.text}"\n` +
+    `Category: ${localQuote.category}\n` +
+    `Last modified: ${new Date(localQuote.lastModified).toLocaleString()}\n\n` +
+    `Server version: "${serverQuote.text}"\n` +
+    `Category: ${serverQuote.category}\n` +
+    `Last modified: ${new Date(serverQuote.lastModified).toLocaleString()}\n\n` +
+    `Click OK to keep Server's version, Cancel to keep Local version.`
+  );
+
+  return choice ? serverQuote : localQuote;
+}
+
+// Advanced merge with conflict detection
+function mergeQuotesWithConflictResolution(localQuotes, serverQuotes) {
+  let conflictsResolved = 0;
+  
+  // Handle conflicts for quotes that exist in both local and server
+  const mergedQuotes = localQuotes.map(localQuote => {
+    const serverConflict = serverQuotes.find(sq => sq.id === localQuote.id);
+    
+    if (serverConflict) {
+      // Check if there's actually a conflict (different content or modification time)
+      const hasConflict = localQuote.text !== serverConflict.text || 
+                         localQuote.category !== serverConflict.category ||
+                         new Date(localQuote.lastModified) !== new Date(serverConflict.lastModified);
+      
+      if (hasConflict) {
+        conflictsResolved++;
+        return resolveConflict(localQuote, serverConflict);
+      }
+    }
+    
+    return localQuote;
+  });
+
+  // Add server quotes that don't exist locally
+  const newServerQuotes = serverQuotes.filter(sq => !localQuotes.some(lq => lq.id === sq.id));
+  const finalQuotes = [...mergedQuotes, ...newServerQuotes];
+
+  return { quotes: finalQuotes, conflictsResolved, newFromServer: newServerQuotes.length };
+}
+
+/* ------------------------------
    SERVER SIMULATION FUNCTIONS
 --------------------------------*/
 
 // Base URL for simulated server
 const API_URL = "https://jsonplaceholder.typicode.com/posts";
 
-// Simulate fetching quotes from server with conflict resolution
+// Simulate fetching quotes from server with advanced conflict resolution
 async function fetchQuotesFromServer() {
   try {
+    showSyncStatus("Syncing with server...", "info");
+    
     const response = await fetch(API_URL);
     const data = await response.json();
 
@@ -218,15 +292,29 @@ async function fetchQuotesFromServer() {
     // Keep local (non-server) quotes intact
     const localQuotes = quotes.filter(q => q.source !== "server");
 
-    // MERGE: server always refreshes, locals always persist
-    quotes = [...localQuotes, ...serverQuotes];
-
+    // Use advanced merge with conflict resolution
+    const mergeResult = mergeQuotesWithConflictResolution(localQuotes, serverQuotes);
+    
+    quotes = mergeResult.quotes;
     saveQuotes();
-    populateCategories();   // dropdown will now include all categories present
+    populateCategories();
     showRandomQuote();
-    console.log("Quotes synced: local + server merged, server refreshed.", quotes);
+
+    // Show detailed sync status
+    let statusMessage = "Quotes synced successfully!";
+    if (mergeResult.conflictsResolved > 0) {
+      statusMessage += ` ${mergeResult.conflictsResolved} conflict(s) resolved.`;
+    }
+    if (mergeResult.newFromServer > 0) {
+      statusMessage += ` ${mergeResult.newFromServer} new quote(s) from server.`;
+    }
+    
+    showSyncStatus(statusMessage, mergeResult.conflictsResolved > 0 ? "warning" : "info");
+    console.log("Sync completed:", mergeResult);
+    
   } catch (error) {
     console.error("Error fetching quotes:", error);
+    showSyncStatus("Failed to sync with server. Please try again.", "warning");
   }
 }
 
@@ -243,7 +331,13 @@ async function postQuoteToServer(quote) {
     console.log("Posted new quote (simulated):", result);
   } catch (error) {
     console.error("Error posting new quote:", error);
+    showSyncStatus("Failed to sync new quote to server.", "warning");
   }
+}
+
+// Manual sync button functionality
+function manualSync() {
+  fetchQuotesFromServer();
 }
 
 // Initialize
