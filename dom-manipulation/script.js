@@ -7,11 +7,9 @@ let quotes = [
   { text: "Do not go where the path may lead, go instead where there is no path and leave a trail.", category: "Inspiration" }
 ];
 
-
 // DOM references
 const quoteDisplay = document.getElementById("quoteDisplay");
 const newQuoteBtn = document.getElementById("newQuote");
-const addQuoteBtn = document.getElementById("addQuoteBtn");
 
 // Show a random quote
 function showRandomQuote() {
@@ -23,7 +21,6 @@ function showRandomQuote() {
   const quote = quotes[randomIndex];
   quoteDisplay.innerHTML = `<p>"${quote.text}"</p><small>— ${quote.category}</small>`;
 }
-
 
 // Add a new quote dynamically
 function addQuote() {
@@ -46,9 +43,24 @@ function addQuote() {
   showRandomQuote();
 }
 
-// Event listeners
-newQuoteBtn.addEventListener("click", showRandomQuote);
-addQuoteBtn.addEventListener("click", addQuote);
+// Create the quote submission form dynamically
+function createAddQuoteForm() {
+  const formContainer = document.createElement("div");
+  formContainer.id = "quoteFormContainer";
 
-// Initial display
+  formContainer.innerHTML = `
+    <input id="newQuoteText" type="text" placeholder="Enter a new quote" />
+    <input id="newQuoteCategory" type="text" placeholder="Enter quote category" />
+    <button id="addQuoteBtn">Add Quote</button>
+  `;
+
+  document.body.appendChild(formContainer);
+
+  // Attach event listener to the new button
+  document.getElementById("addQuoteBtn").addEventListener("click", addQuote);
+}
+
+// Initialize
+newQuoteBtn.addEventListener("click", showRandomQuote);
+createAddQuoteForm();
 showRandomQuote();
