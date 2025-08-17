@@ -11,15 +11,23 @@ let quotes = JSON.parse(localStorage.getItem("quotes")) || [
 const quoteDisplay = document.getElementById("quoteDisplay");
 const newQuoteBtn = document.getElementById("newQuote");
 
-// Show a random quote
+// Show a random quote (respects active filter)
 function showRandomQuote() {
-  if (quotes.length === 0) {
+  const categoryFilter = document.getElementById("categoryFilter");
+  let quotesToShow = quotes;
+
+  // Apply filter if one is selected
+  if (categoryFilter && categoryFilter.value !== "all") {
+    quotesToShow = quotes.filter(q => q.category === categoryFilter.value);
+  }
+
+  if (quotesToShow.length === 0) {
     quoteDisplay.innerHTML = "<em>No quotes available.</em>";
     return;
   }
 
-  const randomIndex = Math.floor(Math.random() * quotes.length);
-  const quote = quotes[randomIndex];
+  const randomIndex = Math.floor(Math.random() * quotesToShow.length);
+  const quote = quotesToShow[randomIndex];
 
   quoteDisplay.innerHTML = `<p>"${quote.text}"</p><small>— ${quote.category}</small>`;
 
