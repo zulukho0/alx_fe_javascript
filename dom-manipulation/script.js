@@ -1,10 +1,10 @@
 // Load quotes from localStorage or use default
 let quotes = JSON.parse(localStorage.getItem("quotes")) || [
-  { text: "Success is not final, failure is not fatal: It is the courage to continue that counts.", category: "Motivation" },
-  { text: "Be yourself; everyone else is already taken.", category: "Humor" },
-  { text: "The best way to get started is to quit talking and begin doing.", category: "Motivation" },
-  { text: "Life is what happens when you're busy making other plans.", category: "Life" },
-  { text: "Do not go where the path may lead, go instead where there is no path and leave a trail.", category: "Inspiration" }
+  { id: 1, text: "Success is not final, failure is not fatal: It is the courage to continue that counts.", category: "Motivation", source: "default", lastModified: new Date().toISOString() },
+  { id: 2, text: "Be yourself; everyone else is already taken.", category: "Humor", source: "default", lastModified: new Date().toISOString() },
+  { id: 3, text: "The best way to get started is to quit talking and begin doing.", category: "Motivation", source: "default", lastModified: new Date().toISOString() },
+  { id: 4, text: "Life is what happens when you're busy making other plans.", category: "Life", source: "default", lastModified: new Date().toISOString() },
+  { id: 5, text: "Do not go where the path may lead, go instead where there is no path and leave a trail.", category: "Inspiration", source: "default", lastModified: new Date().toISOString() }
 ];
 
 // DOM references
@@ -50,7 +50,13 @@ function addQuote() {
     return;
   }
 
-  const newQuote = { text: quoteText, category: quoteCategory };
+  const newQuote = {
+    id: Date.now(), // Simple ID generation
+    text: quoteText,
+    category: quoteCategory,
+    lastModified: new Date().toISOString(),
+    source: "local"
+  };
 
   quotes.push(newQuote);
   saveQuotes();
@@ -195,22 +201,30 @@ function filterQuotes() {
 // Base URL for simulated server
 const API_URL = "https://jsonplaceholder.typicode.com/posts";
 
-// Simulate fetching quotes from server
+// Simulate fetching quotes from server with conflict resolution
 async function fetchQuotesFromServer() {
   try {
     const response = await fetch(API_URL);
     const data = await response.json();
 
-    // Map server posts to quotes format (limit to first 10 for demo)
-    quotes = data.slice(0, 10).map(item => ({
+    const serverQuotes = data.slice(0, 10).map(item => ({
+      id: item.id,
       text: item.title,
-      category: "Server"
+      category: "Server",
+      lastModified: new Date().toISOString(),
+      source: "server"
     }));
 
+    // Keep local (non-server) quotes intact
+    const localQuotes = quotes.filter(q => q.source !== "server");
+
+    // MERGE: server always refreshes, locals always persist
+    quotes = [...localQuotes, ...serverQuotes];
+
     saveQuotes();
-    populateCategories();
+    populateCategories();   // dropdown will now include all categories present
     showRandomQuote();
-    console.log("Quotes fetched from simulated server:", quotes);
+    console.log("Quotes synced: local + server merged, server refreshed.", quotes);
   } catch (error) {
     console.error("Error fetching quotes:", error);
   }
