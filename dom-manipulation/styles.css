@@ -74,3 +74,49 @@ body {
 #newQuote:hover {
   background-color: #218838;
 }
+
+/* General button styling */
+button {
+  padding: 10px 16px;
+  margin: 8px;
+  font-size: 16px;
+  border: none;
+  border-radius: 6px;
+  background-color: #4CAF50;
+  color: white;
+  cursor: pointer;
+  transition: background-color 0.3s ease;
+}
+
+button:hover {
+  background-color: #45a049;
+}
+
+/* File input styling */
+#importFile {
+  margin: 8px;
+  padding: 8px;
+  font-size: 16px;
+  border: 1px solid #ccc;
+  border-radius: 6px;
+  background-color: #f9f9f9;
+}
+
+#quoteFormContainer {
+  margin-top: 20px;
+}
+
+#quoteFormContainer input,
+#quoteFormContainer button {
+  display: block;
+  margin: 10px 0;
+  padding: 10px;
+  font-size: 16px;
+}
+
+#fileControls {
+  margin-top: 20px;
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+}
