@@ -340,6 +340,11 @@ function manualSync() {
   fetchQuotesFromServer();
 }
 
+// Alias function so older code can call syncQuotes()
+function syncQuotes() {
+  fetchQuotesFromServer();
+}
+
 // Initialize
 newQuoteBtn.addEventListener("click", showRandomQuote);
 createAddQuoteForm();
