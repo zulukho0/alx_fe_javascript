@@ -166,3 +166,38 @@ button:hover {
   color: #664d03;
   border: 1px solid #ffecb5;
 }
+
+/* Container for filter + button */
+#filterControls {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+  margin: 16px 0;
+}
+
+/* Style dropdown consistent with button */
+#categoryFilter {
+  padding: 10px 14px;
+  font-size: 1rem;
+  border: 1px solid #ccc;
+  border-radius: 6px;
+  background-color: #fff;
+  color: #333;
+  outline: none;
+  cursor: pointer;
+  min-width: 200px;
+  height: 42px; /* match button height */
+  transition: border-color 0.3s, box-shadow 0.3s;
+}
+
+#categoryFilter:hover,
+#categoryFilter:focus {
+  border-color: #0078D7;
+  box-shadow: 0 0 4px rgba(0, 120, 215, 0.4);
+}
+
+#filterControls button {
+  height: 42px; /* line up with dropdown */
+  display: flex;
+  align-items: center;
+}
