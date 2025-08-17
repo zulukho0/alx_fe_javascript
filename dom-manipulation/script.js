@@ -50,14 +50,19 @@ function addQuote() {
     return;
   }
 
-  quotes.push({ text: quoteText, category: quoteCategory });
+  const newQuote = { text: quoteText, category: quoteCategory };
+
+  quotes.push(newQuote);
   saveQuotes();
 
   document.getElementById("newQuoteText").value = "";
   document.getElementById("newQuoteCategory").value = "";
 
   showRandomQuote();
-  populateCategories(); // ✅ update categories if new added
+  populateCategories();
+
+  // 🔹 Simulate posting to server as well
+  postQuoteToServer(newQuote);
 }
 
 // Export quotes to JSON file
@@ -90,7 +95,7 @@ function importFromJsonFile(event) {
       saveQuotes();
       alert("Quotes imported successfully!");
       showRandomQuote();
-      populateCategories(); // ✅ refresh categories too
+      populateCategories();
     } catch (err) {
       alert("Failed to import quotes: " + err.message);
     }
@@ -160,7 +165,7 @@ function populateCategories() {
   const savedFilter = localStorage.getItem("selectedCategory");
   if (savedFilter && [...filter.options].some(opt => opt.value === savedFilter)) {
     filter.value = savedFilter;
-    filterQuotes(); // immediately apply
+    filterQuotes();
   }
 }
 
@@ -183,8 +188,58 @@ function filterQuotes() {
   }
 }
 
+/* ------------------------------
+   SERVER SIMULATION FUNCTIONS
+--------------------------------*/
+
+// Base URL for simulated server
+const API_URL = "https://jsonplaceholder.typicode.com/posts";
+
+// Simulate fetching quotes from server
+async function fetchQuotesFromServer() {
+  try {
+    const response = await fetch(API_URL);
+    const data = await response.json();
+
+    // Map server posts to quotes format (limit to first 10 for demo)
+    quotes = data.slice(0, 10).map(item => ({
+      text: item.title,
+      category: "Server"
+    }));
+
+    saveQuotes();
+    populateCategories();
+    showRandomQuote();
+    console.log("Quotes fetched from simulated server:", quotes);
+  } catch (error) {
+    console.error("Error fetching quotes:", error);
+  }
+}
+
+// Simulate posting a new quote to server
+async function postQuoteToServer(quote) {
+  try {
+    const response = await fetch(API_URL, {
+      method: "POST",
+      body: JSON.stringify(quote),
+      headers: { "Content-Type": "application/json" }
+    });
+
+    const result = await response.json();
+    console.log("Posted new quote (simulated):", result);
+  } catch (error) {
+    console.error("Error posting new quote:", error);
+  }
+}
+
 // Initialize
 newQuoteBtn.addEventListener("click", showRandomQuote);
 createAddQuoteForm();
-populateCategories();   // ✅ initialize filter dropdown
+populateCategories();
 restoreLastViewedQuote();
+
+// Periodically fetch from server (every 30 seconds, for demo)
+setInterval(fetchQuotesFromServer, 30000);
+
+// Initial fetch when page loads
+fetchQuotesFromServer();
